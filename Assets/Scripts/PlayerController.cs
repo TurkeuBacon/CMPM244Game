@@ -6,12 +6,14 @@ public class PlayerController : MonoBehaviour {
     [SerializeField] private Camera playerCamera;
     [SerializeField] private Rigidbody rb;
     [SerializeField] private PlayerGroundCheck playerGroundCheck;
-    [SerializeField] private float jumpHeight, gravity, speed;
+    [SerializeField] private float jumpHeight, gravity, speed, cameraSensitivity, verticalRange;
 
     private bool jump;
     private Vector3 moveDir;
 
     void Start() {
+        Cursor.visible = false;
+        Cursor.lockState = CursorLockMode.Locked;
         jump = false;
     }
 
@@ -32,6 +34,18 @@ public class PlayerController : MonoBehaviour {
         if (Keyboard.current.dKey.isPressed) {
             moveDir += Vector3.right;
         }
+
+        Vector2 mouseMovement = Mouse.current.delta.ReadValue();
+        Vector3 rotationDelta = new Vector3(-mouseMovement.y, mouseMovement.x, 0f) * cameraSensitivity * Time.deltaTime;
+
+        float currentPlayerRotationY = transform.localRotation.eulerAngles.y;
+        currentPlayerRotationY += rotationDelta.y;
+        transform.localRotation = Quaternion.Euler(Vector3.up * currentPlayerRotationY);
+
+        float currentCameraRotationX = playerCamera.transform.localRotation.eulerAngles.x;
+        if (currentCameraRotationX >= 180) currentCameraRotationX -= 360;
+        currentCameraRotationX = Mathf.Clamp(currentCameraRotationX + rotationDelta.x, -verticalRange / 2, verticalRange / 2);
+        playerCamera.transform.localRotation = Quaternion.Euler(Vector3.right * currentCameraRotationX);
     }
 
     void FixedUpdate() {

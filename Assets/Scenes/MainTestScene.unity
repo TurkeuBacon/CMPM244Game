@@ -640,6 +640,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController
   playerCamera: {fileID: 7582330}
   rb: {fileID: 2035143060}
+  playerGroundCheck: {fileID: 427090283}
+  jumpHeight: 2
+  gravity: 20
+  speed: 10
+  cameraSensitivity: 10
+  verticalRange: 160
 --- !u!1 &2121665742
 GameObject:
   m_ObjectHideFlags: 0
