@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 20cc628b1da149328a7dc6d3f0071c2e
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 107994
+  packageName: Maestro - Midi Player Tool Kit - Free
+  packageVersion: 2.22.0
+  assetPath: Assets/MidiPlayer/AI/Skills/manage-soundfonts/SKILL.md
+  uploadId: 1014990

@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 4bd4d33a8bd14e8f8289d0352ef1e3d2
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 107994
+  packageName: Maestro - Midi Player Tool Kit - Free
+  packageVersion: 2.22.0
+  assetPath: Assets/MidiPlayer/AI/Skills/build-midi-player-or-jukebox/SKILL.md
+  uploadId: 1014990

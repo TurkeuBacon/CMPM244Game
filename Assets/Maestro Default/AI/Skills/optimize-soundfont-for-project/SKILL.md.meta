@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: f143d7cc16bb45a49fc3d382888f6272
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 107994
+  packageName: Maestro - Midi Player Tool Kit - Free
+  packageVersion: 2.22.0
+  assetPath: Assets/MidiPlayer/AI/Skills/optimize-soundfont-for-project/SKILL.md
+  uploadId: 1014990

@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 11c1e86637f04e6687367b6a8c6b1e33
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 107994
+  packageName: Maestro - Midi Player Tool Kit - Free
+  packageVersion: 2.22.0
+  assetPath: Assets/MidiPlayer/AI/Skills/generate-chords-scales-and-progressions/SKILL.md
+  uploadId: 1014990

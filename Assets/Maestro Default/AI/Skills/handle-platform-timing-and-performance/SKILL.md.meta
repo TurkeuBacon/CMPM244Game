@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 8787184366c14b4784588a7125aad536
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 107994
+  packageName: Maestro - Midi Player Tool Kit - Free
+  packageVersion: 2.22.0
+  assetPath: Assets/MidiPlayer/AI/Skills/handle-platform-timing-and-performance/SKILL.md
+  uploadId: 1014990

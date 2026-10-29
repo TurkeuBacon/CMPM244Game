@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: ac222228ff7442b5af9117727bc8daf3
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 107994
+  packageName: Maestro - Midi Player Tool Kit - Free
+  packageVersion: 2.22.0
+  assetPath: Assets/MidiPlayer/AI/Skills/synchronize-gameplay-with-music/SKILL.md
+  uploadId: 1014990

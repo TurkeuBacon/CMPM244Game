@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 00a61a888e7e43cd9df4e2bd7d42be81
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 107994
+  packageName: Maestro - Midi Player Tool Kit - Free
+  packageVersion: 2.22.0
+  assetPath: Assets/MidiPlayer/AI/Skills/control-unity-with-midi-hardware/SKILL.md
+  uploadId: 1014990

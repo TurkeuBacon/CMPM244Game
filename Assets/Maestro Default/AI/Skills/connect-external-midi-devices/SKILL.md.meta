@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: ae1ad182d4064005973dc27d8a5b1e84
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 107994
+  packageName: Maestro - Midi Player Tool Kit - Free
+  packageVersion: 2.22.0
+  assetPath: Assets/MidiPlayer/AI/Skills/connect-external-midi-devices/SKILL.md
+  uploadId: 1014990

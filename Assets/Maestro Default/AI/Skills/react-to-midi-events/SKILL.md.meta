@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 274607c290d945d19720acae152c3145
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 107994
+  packageName: Maestro - Midi Player Tool Kit - Free
+  packageVersion: 2.22.0
+  assetPath: Assets/MidiPlayer/AI/Skills/react-to-midi-events/SKILL.md
+  uploadId: 1014990

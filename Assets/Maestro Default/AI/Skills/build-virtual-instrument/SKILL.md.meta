@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 2636f7d1cae440fe92ed35d49ecd4617
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 107994
+  packageName: Maestro - Midi Player Tool Kit - Free
+  packageVersion: 2.22.0
+  assetPath: Assets/MidiPlayer/AI/Skills/build-virtual-instrument/SKILL.md
+  uploadId: 1014990

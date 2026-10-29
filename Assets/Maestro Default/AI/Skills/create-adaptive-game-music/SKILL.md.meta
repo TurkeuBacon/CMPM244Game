@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: bf75b58ef03f4fada4537227cd0403df
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 107994
+  packageName: Maestro - Midi Player Tool Kit - Free
+  packageVersion: 2.22.0
+  assetPath: Assets/MidiPlayer/AI/Skills/create-adaptive-game-music/SKILL.md
+  uploadId: 1014990

@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: c17610ed60ad40218771df15b8acd9a6
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 107994
+  packageName: Maestro - Midi Player Tool Kit - Free
+  packageVersion: 2.22.0
+  assetPath: Assets/MidiPlayer/AI/Skills/play-midi-events-in-real-time/SKILL.md
+  uploadId: 1014990

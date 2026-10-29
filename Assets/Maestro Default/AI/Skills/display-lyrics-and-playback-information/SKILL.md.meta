@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 7a1528d5bae84d6da21fb5b985a9d9fd
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 107994
+  packageName: Maestro - Midi Player Tool Kit - Free
+  packageVersion: 2.22.0
+  assetPath: Assets/MidiPlayer/AI/Skills/display-lyrics-and-playback-information/SKILL.md
+  uploadId: 1014990

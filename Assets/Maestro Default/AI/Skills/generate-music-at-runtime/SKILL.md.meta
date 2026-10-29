@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 68eaaad7e1b64d7e94fde06622dfe769
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 107994
+  packageName: Maestro - Midi Player Tool Kit - Free
+  packageVersion: 2.22.0
+  assetPath: Assets/MidiPlayer/AI/Skills/generate-music-at-runtime/SKILL.md
+  uploadId: 1014990

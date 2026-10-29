@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 4dfa1f09b1c6b5d47966d1a4296fd412
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 107994
+  packageName: Maestro - Midi Player Tool Kit - Free
+  packageVersion: 2.22.0
+  assetPath: Assets/MidiPlayer/Prefab/MidiFileLoader.prefab
+  uploadId: 1014990
