@@ -148,8 +148,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 271a56f574254624284b922f7ae393e6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GrammarTest
-  _seed: 20
+  _seedValue: 20
   _valence: 0.6
+  _arousal: 0.5
+  _scaleRoot: 7
+  _sectionIdentities: 6100620061006300
 --- !u!4 &889468388
 Transform:
   m_ObjectHideFlags: 0

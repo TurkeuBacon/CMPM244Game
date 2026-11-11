@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+
 // DryWet MIDI
 using Melanchall.DryWetMidi.Common;
 using Melanchall.DryWetMidi.Composing;
@@ -11,6 +12,7 @@ using Melanchall.DryWetMidi.Interaction;
 using Melanchall.DryWetMidi.Multimedia;
 using Melanchall.DryWetMidi.MusicTheory;
 using Melanchall.DryWetMidi.Standards; // not used
+
 // Aliases
 using Chord = Melanchall.DryWetMidi.MusicTheory.Chord;
 using Note = Melanchall.DryWetMidi.MusicTheory.Note;
@@ -19,32 +21,25 @@ public class GrammarTest: MonoBehaviour
 {
     #region Unity Testing
 
-    [SerializeField] private int _seed;
+    [SerializeField] private int _seedValue;
     [SerializeField] [Range(-1,1)] private float _valence;
+    [SerializeField] [Range(0,1)] private float _arousal;
+    [SerializeField] private NoteName _scaleRoot;
+    [SerializeField] private char[] _sectionIdentities = new char[0];
 
     private AudioPlayer_Basic _player;
     private void Start()
     {
         //gets chord sequence
-        Section A = new() { Seed = _seed, Valence = _valence, Arousal = 0.5f };
-        List<List<Chord_CommonNotation>> chordsNotation = A.ChordSequence;
-        //converts to discrete chords
-        List<Chord> chordsList = new();
-        for(int i = 0; i < chordsNotation.Count; i++){
-            for(int j = 0; j < chordsNotation[i].Count; j++){
-                chordsList.Add(GetDiatonicChord_Triad(chordsNotation[i][j], GetDiatonicScale(NoteName.C, DiatonicMode.Ionian)));
-            }
-        }
-        //builds chords
-        PatternBuilder builder = new();
-        for(int i = 0; i < chordsList.Count; i++){
-           builder = WriteChordPattern_Block(builder, chordsList[i], MusicalTimeSpan.Whole, 3, 0);
-        }
-        //staple patterns together
-        Pattern chordSequence = builder.Build();
+        Seed seed = new(); seed.SetSeed(_seedValue);
+        Piece piece = new() { Valence = _valence, Arousal = _arousal, 
+        ChordDuration = MusicalTimeSpan.Eighth, ScaleRoot = _scaleRoot,
+        Seed = seed, SectionIdentitySequence = _sectionIdentities };
+        Pattern piecePattern = piece.GeneratePiece();
+
         //set up and start playback
         _player = new() {
-            Pattern = chordSequence,
+            Pattern = piecePattern,
             Loop = true
         };
         _player.Play();
@@ -82,84 +77,41 @@ public class GrammarTest: MonoBehaviour
     #endregion
 
 
-    #region Scales and Chords
-
-    /// <summary>
-    /// Get a diatonic scale via root note, and mode specification
-    /// </summary>
-    /// <param name="root"> root note for the diatonic scale </param>
-    /// <param name="scaleMode"> mode for the scale </param>
-    /// <returns></returns>
-    public Scale GetDiatonicScale(NoteName root, DiatonicMode scaleMode = DiatonicMode.Ionian)
-    {
-        /* Theory behind algorithm
-        Modes rotate intervals     | Content | Index-Reading
-        Lydian     : W-W-W-H-W-W-H | -       | -
-        Ionian     : W-W-H-W-W-W-H | + 3     | + 4
-        Mixolydian : W-W-H-W-W-H-W | + 3     | + 4
-        etc. continutes on for other darker modes
-        Intervals start 3 later, in mod 7
-        */
-
-        // Implementation
-        Interval[] lydianIntervals = new Interval[7] { Interval.Two, Interval.Two, Interval.Two, Interval.One, Interval.Two, Interval.Two, Interval.One };
-        Interval[] scaleIntervals = new Interval[7];
-        int index = (6 - (int)scaleMode) * 4 % 7; //gets starting index for interval loop
-        for(int i = 0; i < scaleIntervals.Length; i++){ //populates interval sequence
-            scaleIntervals[i] = lydianIntervals[index];
-            index = (index + 1) % 7;
-        }
-        return new Scale(scaleIntervals, root);
-    }
-
-    /// <summary>
-    /// Get a triadic chord from a diatonic scale
-    /// </summary>
-    /// <param name="chord"> chord to get </param>
-    /// <param name="scale"> Scale to read from </param>
-    /// <returns> chord of specified root </returns>
-    public Chord GetDiatonicChord_Triad(Chord_CommonNotation chord, Scale scale)
-    {
-        Note[] scaleNotes = scale.GetAscendingNotes(Note.Get(scale.RootNote, 4)).ToArray();
-        int startIndex = (int)chord;
-        return new(
-            scaleNotes[startIndex].NoteName,
-            scaleNotes[(startIndex + 2) % scaleNotes.Length].NoteName,
-            scaleNotes[(startIndex + 4) % scaleNotes.Length].NoteName
-        );
-    }
-
-    #endregion
-
-
     #region Audio Output Testing
 
     /// <summary>
-    /// Writes a chord as a close block to a pattern builder, shifts playhead to end of what it writes
+    /// For Writing chords to a pattern in a pattern builder
     /// </summary>
-    /// <param name="builder"> builder to add to </param>
-    /// <param name="chord"> chord to write </param>
-    /// <param name="chordtimeSpan"> length of block chord </param>
-    /// <param name="bassOctave"> octave of the lowest note </param>
-    /// <param name="inversion"> inversion for the chord </param>
-    /// <returns> pattern builder with the block chord appended </returns>
-    public PatternBuilder WriteChordPattern_Block(PatternBuilder builder, Chord chord, MusicalTimeSpan chordtimeSpan, int bassOctave = 3, int inversion = 0)
+    public class ChordWriter
     {
-        NoteName[] noteNames = chord.NotesNames.ToArray();
-        int selectionIndex = Mathf.Clamp(inversion, 0, noteNames.Length - 1);
-        int octave = bassOctave;
-        for (int i = 0; i < noteNames.Length; i++){
-            // writes the note of the chord
-            builder.Note(Note.Get(noteNames[selectionIndex], octave), chordtimeSpan, (SevenBitNumber)100);
-            builder.StepBack(chordtimeSpan);
-            // octave change checking
-            if ((int)noteNames[i] > (int)noteNames[(selectionIndex + 1) % noteNames.Length]) { octave++; }
-            //advance note selection in chord
-            selectionIndex = (selectionIndex + 1) % noteNames.Length;
-        }
-        builder.StepForward(chordtimeSpan); // move to end of what was written
+        /// <summary>
+        /// Writes a chord as a close block to a pattern builder, shifts playhead to end of what it writes
+        /// </summary>
+        /// <param name="builder"> builder to add to </param>
+        /// <param name="chord"> chord to write </param>
+        /// <param name="chordtimeSpan"> length of block chord </param>
+        /// <param name="bassOctave"> octave of the lowest note </param>
+        /// <param name="inversion"> inversion for the chord </param>
+        /// <returns> pattern builder with the block chord appended </returns>
+        public PatternBuilder WriteChordPattern_Block(PatternBuilder builder, Chord chord, MusicalTimeSpan chordtimeSpan, int bassOctave = 3, int inversion = 0)
+        {
+            NoteName[] noteNames = chord.NotesNames.ToArray();
+            int selectionIndex = Mathf.Clamp(inversion, 0, noteNames.Length - 1);
+            int octave = bassOctave;
+            for (int i = 0; i < noteNames.Length; i++)
+            {
+                // writes the note of the chord
+                builder.Note(Note.Get(noteNames[selectionIndex], octave), chordtimeSpan, (SevenBitNumber)100);
+                builder.StepBack(chordtimeSpan);
+                // octave change checking
+                if ((int)noteNames[i] > (int)noteNames[(selectionIndex + 1) % noteNames.Length]) { octave++; }
+                //advance note selection in chord
+                selectionIndex = (selectionIndex + 1) % noteNames.Length;
+            }
+            builder.StepForward(chordtimeSpan); // move to end of what was written
 
-        return builder;
+            return builder;
+        }
     }
 
     /// <summary>
@@ -204,100 +156,38 @@ public class GrammarTest: MonoBehaviour
 
     #region High-Level Structures
 
+    /// <summary>
+    /// Data structure that reperesents a section of a piece (The 'A' in an ABAB form)
+    /// </summary>
     public struct Section
     {
         /// <summary>
-        /// Optional seed for the section
+        /// Optional, seed for the section
         /// </summary>
-        public int? Seed;
-        /// <summary>
-        /// Valence value, [-1, 1]
-        /// </summary>
-        public float Valence;
-        /// <summary>
-        /// Arousal value, [0, 1]
-        /// </summary>
-        public float Arousal;
+        public Seed Seed;
+
+        // Melody Integration (Once Max finishes it)
+
+
+
+        // Harmony/Grammar functions
 
         /// <summary>
-        /// Get the generated chord sequence for this section
-        /// </summary>
-        public List<List<Chord_CommonNotation>> ChordSequence
-        {
-            get { 
-                if (_chordSequence == null) { CreateSection(); } //generate if null so always returns something valid
-                return _chordSequence;
-            }
-            private set { _chordSequence = value; }
-        }
-        private List<List<Chord_CommonNotation>> _chordSequence;
-
-
-        /// <summary>
-        /// Generates and re-generates section data within struct based on inputs
-        /// </summary>
-        public void CreateSection()
-        {
-            //select mode from valence
-            float modalValence = Mathf.Clamp(Valence, -1f, 0.99f);
-            DiatonicMode[] modes = new DiatonicMode[6] { 
-                DiatonicMode.Phrygian, DiatonicMode.Aeolian, DiatonicMode.Dorian, 
-                DiatonicMode.Mixolydian, DiatonicMode.Ionian, DiatonicMode.Lydian };
-            DiatonicMode mode = modes[Mathf.FloorToInt((modalValence + 1) * 3f)];
-            // we need to remember seed for after generation, as it is incremented by reference across the generation process
-            int? startingSeed = null;
-            if(Seed.HasValue) { startingSeed = Seed.Value; }
-
-            ChordSequence = GetSectionChordSequence(mode, ref Seed); //core generation call, harmony
-            // --- Melody call can be added here ---
-
-            Seed = startingSeed; //resets seed
-        }
-
-        #region Grammar Functions
-
-        /// <summary>
-        /// Generates the sequence of chord functions procedurally from the passage status
-        /// </summary>
-        /// <param name="passageOpen"> is the passage open or closed? </param>
-        ///         /// <param name="seed"> seed if used. Incremented by function. </param>
-        /// <returns> randomly generated set of functional categories in sequence that satisfy passage condition. </returns>
-        private readonly List<FunctionCategory> GenerateFunctionSequence(PassageClosure passageOpen, ref int? seed)
-        {
-            // algorithm is not specific for quantity. We should seek to generate four chords, though 5 is acceptable.
-            // the last chord is the only constrained chord.
-            int CHORDQUANTITY = 4;
-            List<FunctionCategory> chordFunctions = new();
-            System.Random rand = seed.HasValue ? new(seed.Value) : new(); // applied seed, if supplied
-            if (seed.HasValue) { seed  = seed.Value + 1; }
-            for (int i = 0; i < CHORDQUANTITY - 1; i++) { chordFunctions.Add((FunctionCategory)rand.Next(0, 5)); }
-            if (passageOpen == PassageClosure.Open){
-                chordFunctions.Add(rand.Next(0, 2) == 0 ? FunctionCategory.Dominant : FunctionCategory.DominantSub);
-            }
-            if (passageOpen == PassageClosure.Closed){
-                chordFunctions.Add(rand.Next(0, 2) == 0 ? FunctionCategory.Tonic : FunctionCategory.TonicSub);
-            }
-
-            return chordFunctions;
-        }
-
-        /// <summary>
-        /// Runs grammars through fully
+        /// Runs grammars through fully, obtaining the harmonic sequence for the section as a list of lists of chords in common notation. 
+        /// Sublists specify "passage", from orgin symbols
         /// </summary>
         /// <param name="mode"> Diatonic mode of the section </param>
         /// <param name="seed"> seed if used. Incremented by function. </param>
         /// <returns> A list of lists of chords. first-order lists specify passages. second-order is that passages chord sequence </returns>
-        private readonly List<List<Chord_CommonNotation>> GetSectionChordSequence(DiatonicMode mode, ref int? seed )
+        public readonly List<List<Chord_CommonNotation>> GetChordSequence(DiatonicMode mode, Seed seed )
         {
-            System.Random rand = seed.HasValue ? new(seed.Value) : new();
-            if (seed.HasValue) { seed = seed.Value + 1; }
-            // gets orgin symbols
-            // gets functional sequences
+            // seed the random number gen, and increment seed
+            System.Random rand = Seed.GetSeededGenerator(seed);
+            // gets orgin symbols and functional sequences
             List<List<FunctionCategory>> categorySets = new();
-            List<PassageClosure> orginSymbols = FunctionalClosureBindings.GetRandomClosureSequence(ref seed);
+            List<PassageClosure> orginSymbols = FunctionalClosureBindings.GetRandomClosureSequence(seed);
             for (int i = 0; i < orginSymbols.Count; i++){
-                categorySets.Add(GenerateFunctionSequence(orginSymbols[i], ref seed));
-                if (seed.HasValue) { seed = seed.Value + 1; }
+                categorySets.Add(GenerateFunctionSequence(orginSymbols[i], seed));
             }
             // converts functions to common chords
             List<List<Chord_CommonNotation>> output = new();
@@ -310,12 +200,110 @@ public class GrammarTest: MonoBehaviour
             }
 
             return output;
+
+            // Generates the sequence of chord functions procedurally from the passage status
+            static List<FunctionCategory> GenerateFunctionSequence(PassageClosure passageOpen, Seed seed)
+            {
+                // algorithm is not specific for quantity. We should seek to generate four chords, though 5 is acceptable.
+                // the last chord is the only constrained chord.
+                int CHORDQUANTITY = 4;
+                List<FunctionCategory> chordFunctions = new();
+                System.Random rand = Seed.GetSeededGenerator(seed); // applies seed, if supplied
+                for (int i = 0; i < CHORDQUANTITY - 1; i++) { chordFunctions.Add((FunctionCategory)rand.Next(0, 5)); }
+                if (passageOpen == PassageClosure.Open){
+                    chordFunctions.Add(rand.Next(0, 2) == 0 ? FunctionCategory.Dominant : FunctionCategory.DominantSub);
+                }
+                if (passageOpen == PassageClosure.Closed){
+                    chordFunctions.Add(rand.Next(0, 2) == 0 ? FunctionCategory.Tonic : FunctionCategory.TonicSub);
+                }
+
+                return chordFunctions;
+            }
         }
 
-        #endregion
+    }
 
+    /// <summary>
+    /// Data structure that represents a collection of sections, represents a full generated piece
+    /// </summary>
+    public struct Piece
+    {
+        /// <summary>
+        /// Optional seed for the section
+        /// </summary>
+        public Seed Seed;
+        /// <summary>
+        /// Valence value, [-1, 1]
+        /// </summary>
+        public float Valence;
+        /// <summary>
+        /// Arousal value, [0, 1]
+        /// </summary>
+        public float Arousal;
+
+        /// <summary>
+        /// High-Level section stricture, ie 'ABAB', 'ABAC', 'ABACAD', etc.
+        /// </summary>
+        public char[] SectionIdentitySequence;
+
+        /// <summary>
+        /// Root note of the scale used. For modes, tonic of the mode. If C, C Ionian, C Dorian, etc. 
+        /// </summary>
+        public NoteName ScaleRoot;
+        /// <summary>
+        /// Musical length of each chord (half note, whole note, etc.)
+        /// </summary>
+        public MusicalTimeSpan ChordDuration;
+
+        public Pattern PieceGenerated{
+            get { 
+                _pieceGenerated??= GeneratePiece();
+                return _pieceGenerated;
+            }
+            private set { _pieceGenerated = value; }
+        }
+        private Pattern _pieceGenerated;
+
+
+        private List<Section> _sections;
+
+        private void GeneratePieceSections()
+        {
+            _sections = new();
+            Dictionary<int, Section> identityMap = new();
+            for (int i = 0; i < SectionIdentitySequence.Length; i++){
+                if (identityMap.ContainsKey(SectionIdentitySequence[i])){
+                    _sections.Add(identityMap[SectionIdentitySequence[i]]);
+                }
+                else{
+                    identityMap.Add(SectionIdentitySequence[i], new() { Seed = Seed });
+                    _sections.Add(identityMap[SectionIdentitySequence[i]]);
+                }
+            }
+        }
+
+        public Pattern GeneratePiece()
+        {
+            GeneratePieceSections();
+            PatternBuilder patternBuilder = new();
+            DiatonicMode mode = MusicGenUtility.GetModeFromValence(Valence);
+            Scale scale = MusicGenUtility.GetDiatonicScale(ScaleRoot, mode);
+            ChordWriter chordWriter = new();
+            for(int i = 0; i < _sections.Count; i++){
+                List<List<Chord_CommonNotation>> chords = _sections[i].GetChordSequence(mode, Seed);
+                for(int j = 0; j < chords.Count; j++){
+                    for (int k = 0; k < chords[j].Count; k++){
+                        Chord chord = MusicGenUtility.GetDiatonicChord_Triad(chords[j][k], scale);
+                        chordWriter.WriteChordPattern_Block(patternBuilder, chord, ChordDuration, 3, 0);
+                    }
+                }
+            }
+
+            return patternBuilder.Build();
+        }
 
     }
+
 
     #endregion
 
@@ -506,10 +494,9 @@ Technical considerations on symbols
         /// </summary>
         /// <param name="seed"> optional seed. Incremented by functiom </param>
         /// <returns> Closure sequence </returns>
-        public static List<PassageClosure> GetRandomClosureSequence(ref int? seed)
+        public static List<PassageClosure> GetRandomClosureSequence(Seed seed)
         {
-            System.Random rand = seed.HasValue ? new(seed.Value) : new();
-            if (seed.HasValue) { seed = seed.Value + 1; } // increment seed
+            System.Random rand = Seed.GetSeededGenerator(seed);
 
             return _passageClosureSequences[rand.Next(0, _passageClosureSequences.Count)];
         }
@@ -521,6 +508,139 @@ Technical considerations on symbols
             new() {PassageClosure.Closed, PassageClosure.Open, PassageClosure.Closed }, //coc
             new() {PassageClosure.Closed, PassageClosure.Open, PassageClosure.Open, PassageClosure.Closed }, //cooc
         };
+    }
+
+    #endregion
+
+
+    #region Utility
+
+    public static class MusicGenUtility
+    {
+        /// <summary>
+        /// Get the diatonic mode mapped to a specified valence value
+        /// </summary>
+        /// <returns></returns>
+        public static DiatonicMode GetModeFromValence(float valence)
+        {
+            //select mode from valence, uses mapping from enum
+            float modalValence = Mathf.Clamp(valence, -1f, 0.99f);
+            return (DiatonicMode)(Mathf.FloorToInt((modalValence + 1) * 3f) + 1);
+        }
+
+        /// <summary>
+        /// Get a diatonic scale via root note, and mode specification
+        /// </summary>
+        /// <param name="root"> root note for the diatonic scale </param>
+        /// <param name="scaleMode"> mode for the scale </param>
+        /// <returns></returns>
+        public static Scale GetDiatonicScale(NoteName root, DiatonicMode scaleMode = DiatonicMode.Ionian)
+        {
+            /* Theory behind algorithm
+            Modes rotate intervals     | Content | Index-Reading
+            Lydian     : W-W-W-H-W-W-H | -       | -
+            Ionian     : W-W-H-W-W-W-H | + 3     | + 4
+            Mixolydian : W-W-H-W-W-H-W | + 3     | + 4
+            etc. continutes on for other darker modes
+            Intervals start 3 later, in mod 7
+            */
+
+            // Implementation
+            Interval[] lydianIntervals = new Interval[7] { Interval.Two, Interval.Two, Interval.Two, Interval.One, Interval.Two, Interval.Two, Interval.One };
+            Interval[] scaleIntervals = new Interval[7];
+            int index = (6 - (int)scaleMode) * 4 % 7; //gets starting index for interval loop
+            for (int i = 0; i < scaleIntervals.Length; i++)
+            { //populates interval sequence
+                scaleIntervals[i] = lydianIntervals[index];
+                index = (index + 1) % 7;
+            }
+            return new Scale(scaleIntervals, root);
+        }
+
+        /// <summary>
+        /// Get a triadic chord from a diatonic scale
+        /// </summary>
+        /// <param name="chord"> chord to get </param>
+        /// <param name="scale"> Scale to read from </param>
+        /// <returns> chord of specified root </returns>
+        public static Chord GetDiatonicChord_Triad(Chord_CommonNotation chord, Scale scale)
+        {
+            Note[] scaleNotes = scale.GetAscendingNotes(Note.Get(scale.RootNote, 4)).ToArray();
+            int startIndex = (int)chord;
+            return new(
+                scaleNotes[startIndex].NoteName,
+                scaleNotes[(startIndex + 2) % scaleNotes.Length].NoteName,
+                scaleNotes[(startIndex + 4) % scaleNotes.Length].NoteName
+            );
+        }
+
+    }
+
+    /// <summary>
+    /// Incrementable seed for generator randomness
+    /// Features a nullable integer internaly as seed
+    /// Has a "BaseSeed" value, and a "ActiveSeed" value. The active seed is set to the base seed when set.
+    /// Only the ActiveSeed is modified by incrementation. The BaseSeed remains unchanged
+    /// </summary>
+    public class Seed
+    {
+        /// <summary>
+        /// Check if the seed exists
+        /// </summary>
+        public bool HasSeed => _baseSeed.HasValue;
+        /// <summary>
+        /// read the base seed
+        /// </summary>
+        public int BaseSeed { get { return _baseSeed ?? int.MinValue; } }
+        /// <summary>
+        /// Read the seed + its incrementation
+        /// </summary>
+        public int ActiveSeed { get { return _activeSeed ?? int.MinValue; } }
+
+        private int? _activeSeed;
+        private int? _baseSeed;
+
+        /// <summary>
+        /// Set the base seed and resets active seed back to the base seed
+        /// </summary>
+        /// <param name="value"> base value of the new seed </param>
+        public void SetSeed(int? value)
+        {
+            _baseSeed = value.HasValue ? value.Value : null;
+            _activeSeed = value.HasValue ? value.Value : null;
+        }
+
+        /// <summary>
+        /// Change the value of the active seed by a specified number
+        /// </summary>
+        /// <param name="increment"> number to add to the active seed </param>
+        /// <returns> new ActiveSeed Value. if the seed is clear returns the integer minimum </returns>
+        public int IncrementSeed(int increment = 1)
+        {
+            if (_activeSeed != null){
+                _activeSeed += increment;
+                return _activeSeed.Value;
+            }
+            else { return int.MinValue; }
+        }
+
+        /// <summary>
+        /// Remove the seed, setting its values to null
+        /// </summary>
+        public void ClearSeed()
+        {
+            _baseSeed = null;
+            _activeSeed = null;
+        }
+
+        /// <summary>
+        /// Gets a system.Random seeded with the ActiveSeed. if seed is clear, a unseeded generator is created. Increments the active seed before using it
+        /// </summary>
+        /// <param name="seed"> seed to get a generator from </param>
+        /// <param name="incrementGenerator"> amount to increment seed by. Set to 0 to not increment at all. 1 is the default. </param>
+        /// <returns> Seeded (or unseeded if seed class instance or it's seed are null) system.random number generator </returns>
+        public static System.Random GetSeededGenerator(Seed seed, int incrementGenerator = 1) => (seed != null && seed.HasSeed) ? new(seed.IncrementSeed(incrementGenerator)) : new();
+
     }
 
     #endregion
