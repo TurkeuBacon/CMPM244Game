@@ -166,10 +166,6 @@ public class GrammarTest: MonoBehaviour
         /// </summary>
         public Seed Seed;
 
-        // Melody Integration (Once Max finishes it)
-
-
-
         // Harmony/Grammar functions
 
         /// <summary>
@@ -286,9 +282,11 @@ public class GrammarTest: MonoBehaviour
         {
             GeneratePieceSections();
             PatternBuilder patternBuilder = new();
+            PatternBuilder melodyPatternBuilder = new();
             DiatonicMode mode = MusicGenUtility.GetModeFromValence(Valence);
             Scale scale = MusicGenUtility.GetDiatonicScale(ScaleRoot, mode);
             ChordWriter chordWriter = new();
+            MelodyGenerator melodyGenerator = new();
             for(int i = 0; i < _sections.Count; i++){
                 List<List<Chord_CommonNotation>> chords = _sections[i].GetChordSequence(mode, Seed);
                 for(int j = 0; j < chords.Count; j++){
@@ -297,9 +295,56 @@ public class GrammarTest: MonoBehaviour
                         chordWriter.WriteChordPattern_Block(patternBuilder, chord, ChordDuration, 3, 0);
                     }
                 }
+
+                int chordCount = chords.Sum(passage => passage.Count);
+                MusicalTimeSpan sectionDuration = ChordDuration * chordCount;
+                List<MelodyGenerator.MelodyEvent> melody = melodyGenerator.GenerateMelody(
+                    Seed,
+                    Arousal,
+                    Valence
+                );
+                WriteMelodyPattern(
+                    melodyPatternBuilder,
+                    melody,
+                    scale,
+                    sectionDuration
+                );
             }
 
-            return patternBuilder.Build();
+            PatternBuilder combinedPatternBuilder = new(patternBuilder.Build());
+            combinedPatternBuilder.MoveToStart();
+            combinedPatternBuilder.Pattern(melodyPatternBuilder.Build());
+            return combinedPatternBuilder.Build();
+        }
+
+        private static void WriteMelodyPattern(
+            PatternBuilder builder,
+            List<MelodyGenerator.MelodyEvent> melody,
+            Scale scale,
+            MusicalTimeSpan sectionDuration)
+        {
+            Note[] scaleNotes = scale.GetAscendingNotes(
+                Note.Get(scale.RootNote, 4)
+            ).ToArray();
+
+            foreach (MelodyGenerator.MelodyEvent melodyEvent in melody)
+            {
+                int scaleIndex = melodyEvent.ScaleDegree % scaleNotes.Length;
+                int octave = 4 + melodyEvent.ScaleDegree / scaleNotes.Length;
+                int noteNumber = (int)Note.Get(
+                    scaleNotes[scaleIndex].NoteName,
+                    octave
+                ).NoteNumber + melodyEvent.ChromaticOffset;
+                Note note = Note.Get(
+                    (SevenBitNumber)Mathf.Clamp(noteNumber, 0, 127)
+                );
+                MusicalTimeSpan duration = new(
+                    sectionDuration.Numerator * melodyEvent.DurationSixteenths,
+                    sectionDuration.Denominator * 16
+                );
+
+                builder.Note(note, duration, (SevenBitNumber)90);
+            }
         }
 
     }
