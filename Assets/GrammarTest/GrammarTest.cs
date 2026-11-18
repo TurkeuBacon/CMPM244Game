@@ -33,14 +33,15 @@ public class GrammarTest: MonoBehaviour
         //gets chord sequence
         Seed seed = new(); seed.SetSeed(_seedValue);
         Piece piece = new() { Valence = _valence, Arousal = _arousal, 
-        ChordDuration = MusicalTimeSpan.Eighth, ScaleRoot = _scaleRoot,
+        ChordDuration = MusicalTimeSpan.Whole, ScaleRoot = _scaleRoot,
         Seed = seed, SectionIdentitySequence = _sectionIdentities };
         Pattern piecePattern = piece.GeneratePiece();
 
         //set up and start playback
         _player = new() {
             Pattern = piecePattern,
-            Loop = true
+            Loop = true,
+            TempoBPM = (int)(60 + 180 * _arousal)
         };
         _player.Play();
 
@@ -112,6 +113,85 @@ public class GrammarTest: MonoBehaviour
 
             return builder;
         }
+
+        /// <summary>
+        /// Writes a chord with a waltz pattern to a pattern builder, shifts playhead to end of what it writes
+        /// </summary>
+        /// <param name="builder"> builder to add to </param>
+        /// <param name="chord"> chord to write </param>
+        /// <param name="beat2"> hit on beat 2? param>
+        /// <param name="beat3"> hit on bear 3? </param>
+        /// <param name="chordtimeSpan"> length of block chord </param>
+        /// <param name="bassOctave"> octave of the lowest note </param>
+        /// <param name="inversion"> inversion for the chord </param>
+        /// <returns> pattern builder with the waltz chord appended </returns>
+        public PatternBuilder WriteChordPattern_Waltz(PatternBuilder builder, Chord chord, bool beat2, bool beat3, MusicalTimeSpan chordtimeSpan, int bassOctave = 3, int inversion = 0)
+        {
+            NoteName[] noteNames = chord.NotesNames.ToArray();
+            int selectionIndex = Mathf.Clamp(inversion, 0, noteNames.Length - 1);
+            int octave = bassOctave;
+            MusicalTimeSpan thirdDuration = chordtimeSpan / 3;
+            // get the notes
+            Note bass = Note.Get(noteNames[selectionIndex], octave);
+            Note[] weakNotes = new Note[noteNames.Length - 1];
+            for (int i = 0; i < weakNotes.Length; i++) {
+                if ((int)noteNames[i] > (int)noteNames[(selectionIndex + 1) % noteNames.Length]) { octave++; }
+                selectionIndex = (selectionIndex + 1) % noteNames.Length;
+                weakNotes[i] = Note.Get(noteNames[selectionIndex], octave);
+            }
+            // write the notes
+            builder.Note(bass, thirdDuration, (SevenBitNumber)100);
+            // beat 2
+            if (beat2) {
+                for (int i = 0; i < weakNotes.Length; i++) {
+                    builder.Note(weakNotes[i], thirdDuration, (SevenBitNumber)75);
+                    builder.StepBack(thirdDuration);
+                }
+            }
+            builder.StepForward(thirdDuration);
+            // beat 3
+            if (beat3) {
+                for (int i = 0; i < weakNotes.Length; i++) {
+                    builder.Note(weakNotes[i], thirdDuration, (SevenBitNumber)75);
+                    builder.StepBack(thirdDuration);
+                }
+            }
+            builder.StepForward(thirdDuration);
+
+            return builder;
+        }
+
+        /// <summary>
+        /// Writes a chord as an arpeggio to a pattern builder, shifts playhead to end of what it writes
+        /// </summary>
+        /// <param name="builder"> builder to add to </param>
+        /// <param name="chord"> chord to write </param>
+        /// <param name="sequence"> sequence of notes in chord (by index) </param>
+        /// <param name="chordtimeSpan"> length of block chord </param>
+        /// <param name="bassOctave"> octave of the lowest note </param>
+        /// <param name="inversion"> inversion for the chord </param>
+        /// <returns> pattern builder with the arpeggiated chord appended </returns>
+        public PatternBuilder WriteChordPattern_Arpeggio(PatternBuilder builder, Chord chord, int[] sequence, MusicalTimeSpan chordtimeSpan, int bassOctave = 3, int inversion = 0)
+        {
+            NoteName[] noteNames = chord.NotesNames.ToArray();
+            int selectionIndex = Mathf.Clamp(inversion, 0, noteNames.Length - 1);
+            int octave = bassOctave;
+            MusicalTimeSpan noteDuration = chordtimeSpan / sequence.Length;
+            // get the notes
+            Note[] notes = new Note[noteNames.Length + 1];
+            for (int i = 0; i < noteNames.Length; i++) {
+                notes[i] = Note.Get(noteNames[selectionIndex], octave);
+                if ((int)noteNames[i] > (int)noteNames[(selectionIndex + 1) % noteNames.Length]) { octave++; }
+                selectionIndex = (selectionIndex + 1) % noteNames.Length;
+            }
+            notes[^1] = Note.Get(notes[0].NoteName, notes[0].Octave + 1); // adds octave over root
+            // write the notes
+            for (int i = 0; i < sequence.Length; i++) {
+                builder.Note(notes[sequence[i]], noteDuration, i == 0 ? (SevenBitNumber)100 : (SevenBitNumber)75);
+            }
+
+            return builder;
+        }
     }
 
     /// <summary>
@@ -121,6 +201,7 @@ public class GrammarTest: MonoBehaviour
     {
         public Pattern Pattern;
         public bool Loop;
+        public int TempoBPM;
 
         private Playback _playback;
         private MidiFile _outputFile;
@@ -131,7 +212,7 @@ public class GrammarTest: MonoBehaviour
         {
             if (Pattern == null) return;
 
-            _outputFile = Pattern.ToFile(TempoMap.Create(Tempo.Default));
+            _outputFile = Pattern.ToFile(TempoMap.Create(Tempo.FromBeatsPerMinute(TempoBPM)));
             _outputDevice = OutputDevice.GetByName(OUTPUT_DEVICE_NAME);
             _playback = _outputFile.GetPlayback(_outputDevice);
             _playback.Loop = Loop;
@@ -287,12 +368,28 @@ public class GrammarTest: MonoBehaviour
             Scale scale = MusicGenUtility.GetDiatonicScale(ScaleRoot, mode);
             ChordWriter chordWriter = new();
             MelodyGenerator melodyGenerator = new();
+            int chordPatternValue = Seed.GetSeededGenerator(Seed).Next(1, 11); // random value [1, 10]. determines chord patterns, and sometimes time signature
+            TimeSignature timeSig = new(4, 4);
+            if (Valence > 0.5 && chordPatternValue > 6) { timeSig = new(3, 4); } // a valence over 0.5 and a chord seed over 6 means 3/4
+
+
             for(int i = 0; i < _sections.Count; i++){
                 List<List<Chord_CommonNotation>> chords = _sections[i].GetChordSequence(mode, Seed);
                 for(int j = 0; j < chords.Count; j++){
                     for (int k = 0; k < chords[j].Count; k++){
                         Chord chord = MusicGenUtility.GetDiatonicChord_Triad(chords[j][k], scale);
-                        chordWriter.WriteChordPattern_Block(patternBuilder, chord, ChordDuration, 3, 0);
+                        // using chordPatternValue and Valence, we can adjust chords
+                        // 3/4 is used SOMETIMES above 0.5 valence (Ionian, Lydian)
+                        if (Valence > 0.5 && chordPatternValue > 6) {
+                            chordWriter.WriteChordPattern_Waltz(patternBuilder, chord, true, true, ChordDuration, 3, 0);
+                        }
+                        else {
+                            // select between block chords, and a few arpeggios
+                            if(chordPatternValue >= 3) { chordWriter.WriteChordPattern_Block(patternBuilder, chord, ChordDuration, 3, 0); }
+                            else if (chordPatternValue >= 5) { chordWriter.WriteChordPattern_Arpeggio(patternBuilder, chord, new int[4] { 0, 2, 1, 2 }, ChordDuration, 3, 0); } //Alberti Bass (1, 5, 3, 5)
+                            else if (chordPatternValue >= 7) chordWriter.WriteChordPattern_Arpeggio(patternBuilder, chord, new int[4] { 0, 1, 2, 3 }, ChordDuration, 3, 0); // ascending triad octave (1, 3, 5, 8)
+                            else chordWriter.WriteChordPattern_Arpeggio(patternBuilder, chord, new int[4] { 0, 1, 2, 1 }, ChordDuration, 3, 0); //  (1, 3, 5, 3)
+                        }
                     }
                 }
 
@@ -301,7 +398,8 @@ public class GrammarTest: MonoBehaviour
                 List<MelodyGenerator.MelodyEvent> melody = melodyGenerator.GenerateMelody(
                     Seed,
                     Arousal,
-                    Valence
+                    Valence,
+                    timeSig
                 );
                 WriteMelodyPattern(
                     melodyPatternBuilder,

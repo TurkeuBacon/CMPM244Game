@@ -1,4 +1,5 @@
 
+using Melanchall.DryWetMidi.Interaction;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -43,6 +44,7 @@ public class MelodyGenerator
         GrammarTest.Seed seed,
         float arousal,
         float valence,
+        TimeSignature timeSignature,
         int targetNotes = 8)
     {
         arousal = Clamp(arousal, 0f, 1f);
@@ -53,7 +55,7 @@ public class MelodyGenerator
 
         // 1. Generate rhythm
         List<int> rhythm = GenerateRhythm(
-            rand, targetNotes);
+            rand, targetNotes, timeSignature);
 
         // 2. Generate binary string
         string binary = GenerateBinaryString(
@@ -99,15 +101,19 @@ public class MelodyGenerator
 
     private List<int> GenerateRhythm(
         System.Random rand,
-        int targetNotes)
+        int targetNotes,
+        TimeSignature timeSignature)
     {
         // Four quarter notes in a 4/4 measure.
         // Each quarter note = four sixteenth-note units.
 
-        List<int> rhythm = new()
-        {
-            4, 4, 4, 4
-        };
+        List<int> rhythm = new();
+        int sixteenthNotes = (int)(timeSignature.Numerator / (float)timeSignature.Denominator * 16f); //number of sixteenth notes in the time sig. will breakdown if cant be cleanly divided (rare)
+        // how do we determine stressing? for the paper we can always do 4 + 4 ... + remainder
+        while (sixteenthNotes > 0) {
+            rhythm.Add(sixteenthNotes >= 4 ? 4 : sixteenthNotes);
+            sixteenthNotes -= 4;
+        }
 
         int attempts = 0;
 
